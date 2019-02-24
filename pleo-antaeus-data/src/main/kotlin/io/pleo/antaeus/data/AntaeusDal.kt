@@ -7,34 +7,37 @@
 
 package io.pleo.antaeus.data
 
-import io.pleo.antaeus.models.Currency
-import io.pleo.antaeus.models.Customer
-import io.pleo.antaeus.models.Invoice
-import io.pleo.antaeus.models.InvoiceStatus
-import io.pleo.antaeus.models.Money
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.selectAll
+import io.pleo.antaeus.models.*
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.joda.time.DateTime
 
+//TODO(firat.eren) refactor this class
 class AntaeusDal(private val db: Database) {
     fun fetchInvoice(id: Int): Invoice? {
         // transaction(db) runs the internal query as a new database transaction.
         return transaction(db) {
             // Returns the first invoice with matching id.
             InvoiceTable
-                .select { InvoiceTable.id.eq(id) }
-                .firstOrNull()
-                ?.toInvoice()
+                    .select { InvoiceTable.id.eq(id) }
+                    .firstOrNull()
+                    ?.toInvoice()
         }
     }
 
     fun fetchInvoices(): List<Invoice> {
         return transaction(db) {
             InvoiceTable
-                .selectAll()
-                .map { it.toInvoice() }
+                    .selectAll()
+                    .map { it.toInvoice() }
+        }
+    }
+
+    fun fetchInvoicesByStatusAndStartDate(status: InvoiceStatus, startDate: DateTime): List<Invoice> {
+        return transaction(db) {
+            InvoiceTable
+                    .select { InvoiceTable.status.eq(status.name).and(InvoiceTable.startDate.less(startDate)) }
+                    .map { it.toInvoice() }
         }
     }
 
@@ -42,31 +45,50 @@ class AntaeusDal(private val db: Database) {
         val id = transaction(db) {
             // Insert the invoice and returns its new id.
             InvoiceTable
-                .insert {
-                    it[this.value] = amount.value
-                    it[this.currency] = amount.currency.toString()
-                    it[this.status] = status.toString()
-                    it[this.customerId] = customer.id
-                } get InvoiceTable.id
+                    .insert {
+                        it[this.value] = amount.value
+                        it[this.currency] = amount.currency.toString()
+                        it[this.status] = status.toString()
+                        it[this.customerId] = customer.id
+                        it[this.startDate] = DateTime.now()
+                    } get InvoiceTable.id
         }
 
         return fetchInvoice(id!!)
     }
 
+    fun updateInvoiceStatus(id: Int, status: InvoiceStatus): Int {
+        return transaction(db) {
+            InvoiceTable
+                    .update({ InvoiceTable.id.eq(id) }) {
+                        it[this.status] = status.toString()
+                    }
+        }
+    }
+
+    fun updateStartDate(id: Int, startDate: DateTime): Int {
+        return transaction(db) {
+            InvoiceTable
+                    .update({ InvoiceTable.id.eq(id) }) {
+                        it[this.startDate] = startDate
+                    }
+        }
+    }
+
     fun fetchCustomer(id: Int): Customer? {
         return transaction(db) {
             CustomerTable
-                .select { CustomerTable.id.eq(id) }
-                .firstOrNull()
-                ?.toCustomer()
+                    .select { CustomerTable.id.eq(id) }
+                    .firstOrNull()
+                    ?.toCustomer()
         }
     }
 
     fun fetchCustomers(): List<Customer> {
         return transaction(db) {
             CustomerTable
-                .selectAll()
-                .map { it.toCustomer() }
+                    .selectAll()
+                    .map { it.toCustomer() }
         }
     }
 
