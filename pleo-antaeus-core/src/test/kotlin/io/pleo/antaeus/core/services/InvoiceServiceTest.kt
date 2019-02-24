@@ -10,14 +10,14 @@ import org.junit.jupiter.api.assertThrows
 import setupInitialData
 
 class InvoiceServiceTest {
-    private val dal = getAntaeusDal();
+    private val dal = getAntaeusDal()
     private val invoiceService = InvoiceService(dal)
     private val customerCount = 10
     private val invoicePerCustomerCount = 3
-    private val invoiceCount = customerCount * invoicePerCustomerCount;
+    private val invoiceCount = customerCount * invoicePerCustomerCount
 
     init {
-        setupInitialData(dal, customerCount, invoicePerCustomerCount);
+        setupInitialData(dal, customerCount, invoicePerCustomerCount)
     }
 
     @Test
@@ -37,34 +37,34 @@ class InvoiceServiceTest {
     @Test
     fun `fetchAll will return all invoices`() {
         val invoices = invoiceService.fetchAll()
-        Assertions.assertEquals(invoices.size, invoiceCount);
+        Assertions.assertEquals(invoices.size, invoiceCount)
     }
 
     @Test
     fun `fetchAllByStatusAndStartDate will return all invoices by status`() {
-        var invoices = invoiceService.fetchAllByStatusAndStartDate(InvoiceStatus.PENDING, DateTime.now());
-        Assertions.assertEquals(invoices.size, customerCount);
-        invoices.forEach { invoice -> Assertions.assertEquals(invoice.status, InvoiceStatus.PENDING); }
+        var invoices = invoiceService.fetchAllByStatusAndStartDate(InvoiceStatus.PENDING, DateTime.now())
+        Assertions.assertEquals(invoices.size, customerCount)
+        invoices.forEach { invoice -> Assertions.assertEquals(invoice.status, InvoiceStatus.PENDING) }
 
-        invoices = invoiceService.fetchAllByStatusAndStartDate(InvoiceStatus.PAID, DateTime.now());
-        Assertions.assertEquals(invoices.size, invoiceCount - customerCount);
-        invoices.forEach { invoice -> Assertions.assertEquals(invoice.status, InvoiceStatus.PAID); }
+        invoices = invoiceService.fetchAllByStatusAndStartDate(InvoiceStatus.PAID, DateTime.now())
+        Assertions.assertEquals(invoices.size, invoiceCount - customerCount)
+        invoices.forEach { invoice -> Assertions.assertEquals(invoice.status, InvoiceStatus.PAID) }
 
-        invoices = invoiceService.fetchAllByStatusAndStartDate(InvoiceStatus.UNCOLLECTIBLE, DateTime.now());
-        Assertions.assertEquals(invoices.size, 0);
+        invoices = invoiceService.fetchAllByStatusAndStartDate(InvoiceStatus.UNCOLLECTIBLE, DateTime.now())
+        Assertions.assertEquals(invoices.size, 0)
     }
 
     @Test
     fun `fetchAllByStatusAndStartDate will return empty because startdate is greater than yesterday`() {
-        val yesterday = DateTime.now().minusDays(1);
-        var invoices = invoiceService.fetchAllByStatusAndStartDate(InvoiceStatus.PENDING, yesterday);
-        Assertions.assertEquals(invoices.size, 0);
+        val yesterday = DateTime.now().minusDays(1)
+        var invoices = invoiceService.fetchAllByStatusAndStartDate(InvoiceStatus.PENDING, yesterday)
+        Assertions.assertEquals(invoices.size, 0)
 
-        invoices = invoiceService.fetchAllByStatusAndStartDate(InvoiceStatus.PAID, yesterday);
-        Assertions.assertEquals(invoices.size, 0);
+        invoices = invoiceService.fetchAllByStatusAndStartDate(InvoiceStatus.PAID, yesterday)
+        Assertions.assertEquals(invoices.size, 0)
 
-        invoices = invoiceService.fetchAllByStatusAndStartDate(InvoiceStatus.UNCOLLECTIBLE, yesterday);
-        Assertions.assertEquals(invoices.size, 0);
+        invoices = invoiceService.fetchAllByStatusAndStartDate(InvoiceStatus.UNCOLLECTIBLE, yesterday)
+        Assertions.assertEquals(invoices.size, 0)
     }
 
     @Test
@@ -82,7 +82,7 @@ class InvoiceServiceTest {
         val invoiceId = invoiceCount / 3
         val invoice = invoiceService.fetch(invoiceId)
 
-        val fiveHoursLater = invoice.startDate.plusHours(5);
+        val fiveHoursLater = invoice.startDate.plusHours(5)
         invoiceService.updateStartDate(invoice.id, fiveHoursLater)
         val updatedInvoice = invoiceService.fetch(invoiceId)
         Assertions.assertEquals(updatedInvoice.startDate, fiveHoursLater)

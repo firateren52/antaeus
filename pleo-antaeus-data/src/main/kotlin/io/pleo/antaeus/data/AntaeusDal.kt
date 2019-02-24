@@ -75,6 +75,38 @@ class AntaeusDal(private val db: Database) {
         }
     }
 
+    fun fetchInvoicePayment(id: Int): InvoicePayment? {
+        // transaction(db) runs the internal query as a new database transaction.
+        return transaction(db) {
+            // Returns the first invoice with matching id.
+            InvoicePaymentTable
+                    .select { InvoicePaymentTable.id.eq(id) }
+                    .firstOrNull()
+                    ?.toInvoicePayment()
+        }
+    }
+
+    fun fetchInvoicePaymentsByInvoiceAndStatus(invoiceId: Int, status: InvoicePaymentStatus): List<InvoicePayment> {
+        return transaction(db) {
+            InvoicePaymentTable
+                    .select { InvoicePaymentTable.invoiceId.eq(invoiceId).and(InvoicePaymentTable.status.eq(status.name)) }
+                    .map { it.toInvoicePayment() }
+        }
+    }
+
+    fun createInvoicePayment(invoice: Invoice, status: InvoicePaymentStatus): InvoicePayment? {
+        val id = transaction(db) {
+            // Insert the invoice and returns its new id.
+            InvoicePaymentTable
+                    .insert {
+                        it[this.invoiceId] = invoice.id
+                        it[this.status] = status.toString()
+                        it[this.createDate] = DateTime.now()
+                    } get InvoicePaymentTable.id
+        }
+        return fetchInvoicePayment(id!!)
+    }
+
     fun fetchCustomer(id: Int): Customer? {
         return transaction(db) {
             CustomerTable
