@@ -50,7 +50,7 @@ class AntaeusDal(private val db: Database) {
                         it[this.currency] = amount.currency.toString()
                         it[this.status] = status.toString()
                         it[this.customerId] = customer.id
-                        it[this.startDate] = DateTime.now()
+                        it[this.startDate] = DateTime.now() //TODO(firat.eren) set 1th of next month
                     } get InvoiceTable.id
         }
 

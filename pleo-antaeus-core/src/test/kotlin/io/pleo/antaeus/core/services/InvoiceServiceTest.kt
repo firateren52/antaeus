@@ -2,9 +2,9 @@ package io.pleo.antaeus.core.services
 
 import getAntaeusDal
 import io.pleo.antaeus.core.exceptions.InvoiceNotFoundException
-import io.pleo.antaeus.models.InvoiceStatus
+import io.pleo.antaeus.models.InvoiceStatus.*
 import org.joda.time.DateTime
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import setupInitialData
@@ -31,40 +31,40 @@ class InvoiceServiceTest {
     @Test
     fun `fetch will return invoice if it exists`() {
         val invoice = invoiceService.fetch(invoiceCount / 2)
-        Assertions.assertEquals(invoice.id, invoiceCount / 2)
+        assertEquals(invoice.id, invoiceCount / 2)
     }
 
     @Test
     fun `fetchAll will return all invoices`() {
         val invoices = invoiceService.fetchAll()
-        Assertions.assertEquals(invoices.size, invoiceCount)
+        assertEquals(invoices.size, invoiceCount)
     }
 
     @Test
     fun `fetchAllByStatusAndStartDate will return all invoices by status`() {
-        var invoices = invoiceService.fetchAllByStatusAndStartDate(InvoiceStatus.PENDING, DateTime.now())
-        Assertions.assertEquals(invoices.size, customerCount)
-        invoices.forEach { invoice -> Assertions.assertEquals(invoice.status, InvoiceStatus.PENDING) }
+        var invoices = invoiceService.fetchAllByStatusAndStartDate(PENDING, DateTime.now())
+        assertEquals(invoices.size, customerCount)
+        invoices.forEach { invoice -> assertEquals(invoice.status, PENDING) }
 
-        invoices = invoiceService.fetchAllByStatusAndStartDate(InvoiceStatus.PAID, DateTime.now())
-        Assertions.assertEquals(invoices.size, invoiceCount - customerCount)
-        invoices.forEach { invoice -> Assertions.assertEquals(invoice.status, InvoiceStatus.PAID) }
+        invoices = invoiceService.fetchAllByStatusAndStartDate(PAID, DateTime.now())
+        assertEquals(invoices.size, invoiceCount - customerCount)
+        invoices.forEach { invoice -> assertEquals(invoice.status, PAID) }
 
-        invoices = invoiceService.fetchAllByStatusAndStartDate(InvoiceStatus.UNCOLLECTIBLE, DateTime.now())
-        Assertions.assertEquals(invoices.size, 0)
+        invoices = invoiceService.fetchAllByStatusAndStartDate(UNCOLLECTIBLE, DateTime.now())
+        assertEquals(invoices.size, 0)
     }
 
     @Test
     fun `fetchAllByStatusAndStartDate will return empty because startdate is greater than yesterday`() {
         val yesterday = DateTime.now().minusDays(1)
-        var invoices = invoiceService.fetchAllByStatusAndStartDate(InvoiceStatus.PENDING, yesterday)
-        Assertions.assertEquals(invoices.size, 0)
+        var invoices = invoiceService.fetchAllByStatusAndStartDate(PENDING, yesterday)
+        assertEquals(invoices.size, 0)
 
-        invoices = invoiceService.fetchAllByStatusAndStartDate(InvoiceStatus.PAID, yesterday)
-        Assertions.assertEquals(invoices.size, 0)
+        invoices = invoiceService.fetchAllByStatusAndStartDate(PAID, yesterday)
+        assertEquals(invoices.size, 0)
 
-        invoices = invoiceService.fetchAllByStatusAndStartDate(InvoiceStatus.UNCOLLECTIBLE, yesterday)
-        Assertions.assertEquals(invoices.size, 0)
+        invoices = invoiceService.fetchAllByStatusAndStartDate(UNCOLLECTIBLE, yesterday)
+        assertEquals(invoices.size, 0)
     }
 
     @Test
@@ -72,9 +72,9 @@ class InvoiceServiceTest {
         val invoiceId = invoiceCount / 2
         val invoice = invoiceService.fetch(invoiceId)
 
-        invoiceService.updateInvoiceStatus(invoice.id, InvoiceStatus.UNCOLLECTIBLE)
+        invoiceService.updateInvoiceStatus(invoice.id, UNCOLLECTIBLE)
         val updatedInvoice = invoiceService.fetch(invoiceId)
-        Assertions.assertEquals(updatedInvoice.status, InvoiceStatus.UNCOLLECTIBLE)
+        assertEquals(updatedInvoice.status, UNCOLLECTIBLE)
     }
 
     @Test
@@ -85,7 +85,7 @@ class InvoiceServiceTest {
         val fiveHoursLater = invoice.startDate.plusHours(5)
         invoiceService.updateStartDate(invoice.id, fiveHoursLater)
         val updatedInvoice = invoiceService.fetch(invoiceId)
-        Assertions.assertEquals(updatedInvoice.startDate, fiveHoursLater)
+        assertEquals(updatedInvoice.startDate, fiveHoursLater)
     }
 
 }
