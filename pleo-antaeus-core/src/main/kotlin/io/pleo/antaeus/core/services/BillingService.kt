@@ -12,14 +12,24 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.*
 
-class BillingService(
-        private val paymentProvider: PaymentProvider,
-        private val invoiceService: InvoiceService,
-        private val invoicePaymentService: InvoicePaymentService
-) {
+class BillingService private constructor(val paymentProvider: PaymentProvider,
+                                         val invoiceService: InvoiceService,
+                                         val invoicePaymentService: InvoicePaymentService) {
+    companion object {
+        private var INSTANCE: BillingService? = null
+        fun getInstance(paymentProvider: PaymentProvider, invoiceService: InvoiceService, invoicePaymentService: InvoicePaymentService): BillingService {
+            synchronized(this) {
+                if (INSTANCE == null) {
+                    INSTANCE = BillingService(paymentProvider, invoiceService, invoicePaymentService)
+                }
+                return INSTANCE!!
+            }
+        }
+    }
+
     private val log = LoggerFactory.getLogger("BillingService")
-    private val TIMER_INITIAL_DELAY =1L
-    private val TIMER_DELAY =60L
+    private val TIMER_INITIAL_DELAY = 1L
+    private val TIMER_DELAY = 60L
 
     init {
         // call chargeInvoices in one hour delay

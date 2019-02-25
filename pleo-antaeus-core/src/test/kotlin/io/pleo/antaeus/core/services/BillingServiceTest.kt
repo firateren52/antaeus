@@ -15,20 +15,20 @@ class BillingServiceTest {
     val dal = getAntaeusDal()
     val invoiceService = InvoiceService(dal = dal)
     val invoicePaymentService = InvoicePaymentService(dal = dal)
+    val billingService = BillingService.getInstance(getPaymentProviderWithExceptions(), invoiceService, invoicePaymentService)
     val pendingInvoices: List<Invoice>
 
     private val customerCount = 10
     private val invoicePerCustomerCount = 3
 
     init {
-        setupInitialData(dal, customerCount, invoicePerCustomerCount)
+        setupInitialData(dal, customerCount, invoicePerCustomerCount, invoicePerCustomerCount)
         pendingInvoices = invoiceService.fetchAllByStatusAndStartDate(InvoiceStatus.PENDING, DateTime.now())
     }
 
     @Test
     fun `chargeInvoice should charge for SUCCESS status'`() {
-        val billingService = BillingService(getPaymentProviderWithExceptions(80), invoiceService, invoicePaymentService)
-        val invoice = pendingInvoices.get(pendingInvoices.size /5)
+        val invoice = invoiceService.fetch(10)
 
         val invoicePayment = billingService.chargeInvoice(invoice)
         val updatedInvoice = invoiceService.fetch(invoice.id)
@@ -39,38 +39,26 @@ class BillingServiceTest {
 
     @Test
     fun `chargeInvoice should not charge for FAIL status'`() {
-        val billingService = BillingService(getPaymentProviderWithExceptions(30), invoiceService, invoicePaymentService)
-        val invoice = pendingInvoices.get(pendingInvoices.size /4)
-
-        (1..InvoicePaymentStatus.FAIL.attemptCount).forEach {
-            val invoicePayment = billingService.chargeInvoice(invoice)
-            val updatedInvoice = invoiceService.fetch(invoice.id)
-            val invoicePayments = invoicePaymentService.fetchAllByInvoiceAndStatus(invoice.id, InvoicePaymentStatus.FAIL)
-
-            assertInvoicePayment(invoicePayment, invoice.id, InvoicePaymentStatus.FAIL)
-            if (invoicePayments.size < InvoicePaymentStatus.FAIL.attemptCount) {
-                assertEquals(InvoiceStatus.PENDING, updatedInvoice.status)
-                assertEquals(invoice.startDate.plusSeconds(InvoicePaymentStatus.FAIL.delaySec), updatedInvoice.startDate)
-            } else {
-                assertEquals(InvoiceStatus.UNCOLLECTIBLE, updatedInvoice.status)
-            }
-        }
+        val invoice = invoiceService.fetch(5)
+        assertFailedChargeResult(invoice, InvoicePaymentStatus.FAIL)
     }
 
     @Test
     fun `chargeInvoice should not charge for OTHER_ERROR status'`() {
-        val billingService = BillingService(getPaymentProviderWithExceptions(18), invoiceService, invoicePaymentService)
-        val invoice = pendingInvoices.get(pendingInvoices.size /4)
+        val invoice = invoiceService.fetch(4)
+        assertFailedChargeResult(invoice, InvoicePaymentStatus.OTHER_ERROR)
+    }
 
-        (1..InvoicePaymentStatus.OTHER_ERROR.attemptCount).forEach {
+    private fun assertFailedChargeResult(invoice: Invoice, invoicePaymentStatus: InvoicePaymentStatus) {
+        (1..invoicePaymentStatus.attemptCount).forEach {
             val invoicePayment = billingService.chargeInvoice(invoice)
             val updatedInvoice = invoiceService.fetch(invoice.id)
-            val invoicePayments = invoicePaymentService.fetchAllByInvoiceAndStatus(invoice.id, InvoicePaymentStatus.OTHER_ERROR)
+            val invoicePayments = invoicePaymentService.fetchAllByInvoiceAndStatus(invoice.id, invoicePaymentStatus)
 
-            assertInvoicePayment(invoicePayment, invoice.id, InvoicePaymentStatus.OTHER_ERROR)
-            if (invoicePayments.size < InvoicePaymentStatus.OTHER_ERROR.attemptCount) {
+            assertInvoicePayment(invoicePayment, invoice.id, invoicePaymentStatus)
+            if (invoicePayments.size < invoicePaymentStatus.attemptCount) {
                 assertEquals(InvoiceStatus.PENDING, updatedInvoice.status)
-                assertEquals(invoice.startDate.plusSeconds(InvoicePaymentStatus.OTHER_ERROR.delaySec), updatedInvoice.startDate)
+                assertEquals(invoice.startDate.plusSeconds(invoicePaymentStatus.delaySec), updatedInvoice.startDate)
             } else {
                 assertEquals(InvoiceStatus.UNCOLLECTIBLE, updatedInvoice.status)
             }

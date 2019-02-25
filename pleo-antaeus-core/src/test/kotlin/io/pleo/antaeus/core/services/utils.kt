@@ -43,7 +43,7 @@ internal fun getAntaeusDal(): AntaeusDal {
 }
 
 // This will create all schemas and setup initial data
-internal fun setupInitialData(dal: AntaeusDal, customerCount: Int = 100, invoicePerCustomerCount: Int = 10) {
+internal fun setupInitialData(dal: AntaeusDal, customerCount: Int = 100, invoicePerCustomerCount: Int = 10, statusPercentage: Int = 1) {
     val customers = (1..customerCount).mapNotNull {
         dal.createCustomer(
                 currency = Currency.values()[Random.nextInt(0, Currency.values().size)]
@@ -58,25 +58,25 @@ internal fun setupInitialData(dal: AntaeusDal, customerCount: Int = 100, invoice
                             currency = customer.currency
                     ),
                     customer = customer,
-                    status = if (it == 1) InvoiceStatus.PENDING else InvoiceStatus.PAID
+                    status = if (it <= statusPercentage) InvoiceStatus.PENDING else InvoiceStatus.PAID
             )
         }
     }
 }
 
 // This is the mocked instance of the payment provider with exceptions
-internal fun getPaymentProviderWithExceptions(percentage: Int =  Random.nextInt(100) % 100): PaymentProvider {
+internal fun getPaymentProviderWithExceptions(): PaymentProvider {
     return object : PaymentProvider {
         override fun charge(invoice: Invoice): Boolean {
-            if (percentage < 5) {
+            if (invoice.id == 1) {
                 throw CurrencyMismatchException(invoice.id, invoice.customerId)
-            } else if (percentage < 10) {
+            } else if (invoice.id == 2) {
                 throw CustomerNotFoundException(invoice.customerId)
-            } else if (percentage < 15) {
+            } else if (invoice.id == 3) {
                 throw NetworkException()
-            } else if (percentage < 20) {
+            } else if (invoice.id == 4) {
                 throw RuntimeException()
-            } else if (percentage < 40) {
+            } else if (invoice.id == 5) {
                 return false
             }
             return true
